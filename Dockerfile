@@ -31,6 +31,6 @@ ENTRYPOINT ["/usr/local/bin/start-cfssl.sh"]
 CMD ["cfssl", \
      "serve", \
      "-address=0.0.0.0", \
-     "-ca=/etc/cfssl/ca.pem", \
-     "-ca-key=/etc/cfssl/ca-key.pem", \
+     "-ca=/data/ca.pem", \
+     "-ca-key=/data/ca-key.pem", \
      "-port=8080"]

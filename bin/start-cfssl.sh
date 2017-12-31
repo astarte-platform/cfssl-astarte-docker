@@ -7,10 +7,16 @@ cp /config/* /etc/cfssl/ || true
 
 # Generate keys if necessary
 if [ ! -f /etc/cfssl/ca.pem ] || [ ! -f /etc/cfssl/ca-key.pem ] ; then
-    # Create root
-    cd /etc/cfssl
-    cfssl gencert -initca "/etc/cfssl/csr_root_ca.json" | cfssljson -bare ca
-    cd -
+	# Do we have a persistent CA?
+	if [ ! -f /data/ca.pem ] || [ ! -f /data/ca-key.pem ] ; then
+	    # Create root
+	    cd /data
+	    cfssl gencert -initca "/etc/cfssl/csr_root_ca.json" | cfssljson -bare ca
+	    cd -
+	fi
+else
+	# Copy and override in case
+	cp /etc/cfssl/*.pem /data/
 fi
 
 # Migrate database
