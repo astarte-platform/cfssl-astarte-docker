@@ -8,7 +8,7 @@ RUN go get -u github.com/cloudflare/cfssl/cmd/... && go get bitbucket.org/liamst
 FROM debian:stretch-slim
 
 # Install jq
-RUN apt-get update && apt-get -qq install jq && mkdir /data && mkdir /config
+RUN apt-get update && apt-get -qq install curl jq && mkdir /data && mkdir /config
 
 # Get what we built.
 COPY --from=builder /go/bin/* /usr/local/bin/
