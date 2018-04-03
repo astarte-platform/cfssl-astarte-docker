@@ -21,6 +21,9 @@ COPY etc/* /etc/cfssl/
 # And the startup script
 COPY bin/start-cfssl.sh /usr/local/bin/
 
+# Add the wait-for utility
+RUN cd /usr/bin && curl -X GET -O https://raw.githubusercontent.com/eficode/wait-for/master/wait-for && chmod +x wait-for && cd -
+
 RUN chmod +x /usr/local/bin/start-cfssl.sh
 
 VOLUME ["/data", "/config"]
