@@ -1,28 +1,39 @@
-FROM golang:stretch as builder
+FROM golang:1.13-buster as builder
 
-# Let's get CFSSL and Goose
-RUN go get -u github.com/cloudflare/cfssl/cmd/... && go get bitbucket.org/liamstask/goose/cmd/goose
+WORKDIR /build
 
-# Uhm, that's about it.
+# Install deps
+RUN go get github.com/GeertJohan/go.rice/rice
 
-FROM debian:stretch-slim
+# Install goose
+RUN go get bitbucket.org/liamstask/goose/cmd/goose
+
+# Build CFSSL 1.4.1 (static binary)
+RUN git clone https://github.com/cloudflare/cfssl && cd cfssl && git checkout v1.4.1 && \
+  cd cli/serve && rice embed-go && cd - && \
+  make
+
+FROM debian:buster-slim
 
 # Install jq
-RUN apt-get update && apt-get -qq install curl jq netcat && mkdir /data && mkdir /config
+RUN apt-get update && apt-get -qq install curl jq netcat && apt-get clean && rm -rf /var/lib/apt/lists/* && \
+  mkdir /data && mkdir /config
 
 # Get what we built.
+COPY --from=builder /build/cfssl/bin/* /usr/local/bin/
 COPY --from=builder /go/bin/* /usr/local/bin/
 # And the goose migrations
-COPY --from=builder /go/src/github.com/cloudflare/cfssl/certdb/sqlite /usr/local/share/cfssl/certdb/sqlite3
-COPY --from=builder /go/src/github.com/cloudflare/cfssl/certdb/pg /usr/local/share/cfssl/certdb/postgres
-COPY --from=builder /go/src/github.com/cloudflare/cfssl/certdb/mysql /usr/local/share/cfssl/certdb/mysql
+COPY --from=builder /build/cfssl/certdb/sqlite /usr/local/share/cfssl/certdb/sqlite3
+COPY --from=builder /build/cfssl/certdb/pg /usr/local/share/cfssl/certdb/postgres
+COPY --from=builder /build/cfssl/certdb/mysql /usr/local/share/cfssl/certdb/mysql
 # And the default configuration
 COPY etc/* /etc/cfssl/
 # And the startup script
 COPY bin/start-cfssl.sh /usr/local/bin/
 
 # Add the wait-for utility
-RUN cd /usr/bin && curl -X GET -O https://raw.githubusercontent.com/eficode/wait-for/master/wait-for && chmod +x wait-for && cd -
+RUN cd /usr/local/bin && \
+  curl -X GET -O https://raw.githubusercontent.com/eficode/wait-for/master/wait-for && chmod +x wait-for && cd -
 
 RUN chmod +x /usr/local/bin/start-cfssl.sh
 
