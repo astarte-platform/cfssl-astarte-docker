@@ -1,0 +1,15 @@
+on:
+  push:
+  create:
+  pull_request:
+
+jobs:
+  test-build-container:
+    name: Test Container Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Building Docker Image
+      env:
+        CONTAINER_IMAGE_NAME: gh_actions_test
+      run: docker build -t $CONTAINER_IMAGE_NAME:ci-test .
