@@ -2,22 +2,29 @@
 
 set -e
 
+CFSSL_CA_CERTIFICATE="${CFSSL_CA_CERTIFICATE:-/etc/cfssl/ca.pem}"
+CFSSL_CA_PRIVATE_KEY="${CFSSL_CA_PRIVATE_KEY:-/etc/cfssl/ca-key.pem}"
+
 # Copy eventual overrides
 cp /config/* /etc/cfssl/ || true
 
-# Generate keys if necessary
-if [ ! -f /etc/cfssl/ca.pem ] || [ ! -f /etc/cfssl/ca-key.pem ] ; then
-    # Do we have a persistent CA?
-    if [ ! -f /data/ca.pem ] || [ ! -f /data/ca-key.pem ] ; then
-        # Create root
-        cd /data
-        cfssl gencert -initca "/etc/cfssl/csr_root_ca.json" | cfssljson -bare ca
-        cd -
+# Generate keys if necessary, and if we're not on Kubernetes
+if [[ -z "$KUBERNETES" ]]; then
+    if [ ! -f $CFSSL_CA_CERTIFICATE ] || [ ! -f $CFSSL_CA_PRIVATE_KEY ] ; then
+        # Do we have a persistent CA?
+        if [ ! -f /data/ca.pem ] || [ ! -f /data/ca-key.pem ] ; then
+            # Create root
+            cd /data
+            cfssl gencert -initca "/etc/cfssl/csr_root_ca.json" | cfssljson -bare ca
+            cd -
+            CFSSL_CA_CERTIFICATE="/data/ca.pem"
+            CFSSL_CA_PRIVATE_KEY="/data/ca-key.pem"
+        fi
     fi
-else
-    # Copy and override in case
-    cp /etc/cfssl/*.pem /data/
 fi
+
+# Add the CA definitions
+set -- "$@" -ca="$CFSSL_CA_CERTIFICATE" -ca-key="$CFSSL_CA_PRIVATE_KEY"
 
 # Check whether we want to use a Database or not
 if [[ -z "$CFSSL_USE_DB" ]]; then
