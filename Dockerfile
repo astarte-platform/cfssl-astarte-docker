@@ -1,4 +1,4 @@
-FROM golang:1.13-buster as builder
+FROM golang:1.14-buster as builder
 
 WORKDIR /build
 
@@ -8,8 +8,8 @@ RUN go get github.com/GeertJohan/go.rice/rice
 # Install goose
 RUN go get bitbucket.org/liamstask/goose/cmd/goose
 
-# Build CFSSL 1.4.1 (static binary)
-RUN git clone https://github.com/cloudflare/cfssl && cd cfssl && git checkout v1.4.1 && \
+# Build CFSSL 1.5.0 (static binary)
+RUN git clone https://github.com/cloudflare/cfssl && cd cfssl && git checkout v1.5.0 && \
   cd cli/serve && rice embed-go && cd - && \
   make
 
